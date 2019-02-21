@@ -48,25 +48,29 @@ class Pr2GripperSensorGui(Plugin):
 
     def define_electrodes(self):
         self.electrode_pos_x = \
-            rospy.get_param(
-                "sr_gui_biotac/sensing_electrodes_x_locations",
-                [0,100,200,0,100,200,0,100,200,0,100,200,0,100,200,
-                -100, -100, 300, 300,
-                0, 150, 0])
+		[0,
+		-100, -100,
+		0, 150,
+		300, 300,
+                0,100,200,0,100,200,0,100,200,0,100,200,0,100,200]
         self.electrode_pos_y = \
-            rospy.get_param(
-                "sr_gui_biotac/sensing_electrodes_y_locations",
-                [0,0,0,100,100,100,200,200,200,300,300,300,400,400,400,
-                0, 250, 0, 250,
-                -100, -100, -200])
+		[-200,
+		250, 0,
+		-100, -100,
+		0, 250,
+                0,0,0,100,100,100,200,200,200,300,300,300,400,400,400]
         self.sensing_electrodes_w = \
-                [90,90,90,90,90,90,90,90,90,90,90,90,90,90,90,
-                90, 90, 90, 90,
-                140, 140, 290]
+		[290,
+                90, 90,
+                140, 140,
+		90, 90,
+                90,90,90,90,90,90,90,90,90,90,90,90,90,90,90]
         self.sensing_electrodes_h = \
-                [90,90,90,90,90,90,90,90,90,90,90,90,90,90,90,
-                240, 240, 240, 240,
-                90, 90, 90]
+		[90,
+                240, 240,
+                90, 90,
+		240, 240,
+                90,90,90,90,90,90,90,90,90,90,90,90,90,90,90]
 
     def assign_electrodes(self, nb_electrodes):
         if nb_electrodes == self._nb_electrodes_biotac:
@@ -92,13 +96,16 @@ class Pr2GripperSensorGui(Plugin):
         self.latest_data = msg
 
     def get_electrode_colour_from_value(self, value):
-        r = 0.0
-        g = 0.0
+        r = 255.0
+        g = 255.0
         b = 255.0
 
         value = float(value)
+	if value <= 0.0:
+            return QColor(r, g, b)
 
-        b = 255 * value/5000 
+        r = 255-(255 * value/5000)
+        g = 255-(255 * value/5000)
         return QColor(r, g, b)
 
         threshold = (0.0, 1000.0, 2000.0, 3000.0, 4095.0)
