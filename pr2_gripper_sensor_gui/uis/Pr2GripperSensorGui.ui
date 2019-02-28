@@ -64,7 +64,7 @@
            <item>
             <widget class="QLabel" name="label_25">
              <property name="text">
-              <string>BioTac ID:</string>
+              <string>Side:</string>
              </property>
             </widget>
            </item>
@@ -87,27 +87,12 @@
              </property>
              <item>
               <property name="text">
-               <string>FF</string>
+               <string>Left</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>MF</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>RF</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>LF</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>TH</string>
+               <string>Right</string>
               </property>
              </item>
             </widget>

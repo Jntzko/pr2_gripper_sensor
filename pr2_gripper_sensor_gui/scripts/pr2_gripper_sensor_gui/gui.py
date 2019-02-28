@@ -43,72 +43,56 @@ from pr2_gripper_sensor_msgs.msg import PR2GripperSensorRawData
 
 
 class Pr2GripperSensorGui(Plugin):
-    _nb_electrodes_biotac = 19
-    _nb_electrodes_biotac_sp = 24
 
-    def define_electrodes(self):
-        self.electrode_pos_x = \
-		[0,
-		-100, -100,
-		0, 150,
-		300, 300,
+    def define_taxels(self):
+        self.taxel_pos_x = \
+                [0,
+                -100, -100,
+                0, 150,
+                300, 300,
                 0,100,200,0,100,200,0,100,200,0,100,200,0,100,200]
-        self.electrode_pos_y = \
-		[-200,
-		250, 0,
-		-100, -100,
-		0, 250,
+        self.taxel_pos_y = \
+                [-200,
+                100, 0,
+                -100, -100,
+                0, 100,
                 0,0,0,100,100,100,200,200,200,300,300,300,400,400,400]
-        self.sensing_electrodes_w = \
-		[290,
+        self.taxel_width = \
+                [290,
                 90, 90,
                 140, 140,
-		90, 90,
-                90,90,90,90,90,90,90,90,90,90,90,90,90,90,90]
-        self.sensing_electrodes_h = \
-		[90,
-                240, 240,
                 90, 90,
-		240, 240,
+                90,90,90,90,90,90,90,90,90,90,90,90,90,90,90]
+        self.taxel_height = \
+                [90,
+                390, 90,
+                90, 90,
+                90, 390,
                 90,90,90,90,90,90,90,90,90,90,90,90,90,90,90]
 
-    def assign_electrodes(self, nb_electrodes):
-        if nb_electrodes == self._nb_electrodes_biotac:
-            self.sensing_electrodes_x = self.electrode_pos_x
-            self.sensing_electrodes_y = self.electrode_pos_y
-        else:
-            rospy.logerr("Number of electrodes %d not matching known biotac models. expected: %d or %d",
-                         nb_electrodes, self._nb_electrodes_biotac, self._nb_electrodes_biotac_sp)
-            return
+    def assign_taxels(self):
+        self.taxels_x = self.taxel_pos_x
+        self.taxels_y = self.taxel_pos_y
 
-        for n in range(len(self.sensing_electrodes_x)):
-            self.sensing_electrodes_x[n] = (
-                self.sensing_electrodes_x[n] +
+        for n in range(len(self.taxels_x)):
+            self.taxels_x[n] = (
+                self.taxel_pos_x[n] +
                 self.x_display_offset[0])
-            self.sensing_electrodes_y[n] = (
-                self.sensing_electrodes_y[n] +
+            self.taxels_y[n] = (
+                self.taxel_pos_y[n] +
                 self.y_display_offset[0])
 
     def tactile_cb(self, msg):
-        #if len(msg.tactiles[0].electrodes) != self._nb_electrodes:
-        #    self._nb_electrodes = len(msg.tactiles[0].electrodes)
-        #    self.assign_electrodes(self._nb_electrodes)
         self.latest_data = msg
 
-    def get_electrode_colour_from_value(self, value):
-        r = 255.0
-        g = 255.0
-        b = 255.0
+    def get_taxel_colour_from_value(self, value):
+        r = 255
+        g = 255
+        b = 255
 
         value = float(value)
-	if value <= 0.0:
-            return QColor(r, g, b)
 
-        r = 255-(255 * value/5000)
-        g = 255-(255 * value/5000)
-        return QColor(r, g, b)
-
-        threshold = (0.0, 1000.0, 2000.0, 3000.0, 4095.0)
+        threshold = (0.0, 2000.0, 8000.0)
 
         if value <= threshold[0]:
             pass
@@ -116,30 +100,22 @@ class Pr2GripperSensorGui(Plugin):
         elif value < threshold[1]:
 
             r = 255
-            g = 255 * ((value - threshold[0]) / (threshold[1] - threshold[0]))
-            b = 0
+            g = 255
+            b = 255 - 255 * (value / threshold[1])
 
         elif value < threshold[2]:
-
-            r = 255 * ((threshold[2] - value) / (threshold[2] - threshold[1]))
-            g = 255
+            r = 255
+            g = 255 * ((threshold[2] - value) / (threshold[2] - threshold[1]))
             b = 0
-
-        elif value < threshold[3]:
-
-            r = 0
-            g = 255
-            b = 255 * ((value - threshold[2]) / (threshold[3] - threshold[2]))
-
-        elif value < threshold[4]:
-
-            r = 0
-            g = 255 * ((threshold[4] - value) / (threshold[4] - threshold[3]))
-            b = 255
 
         return QColor(r, g, b)
 
-    def draw_electrode(self, painter, rect_x, rect_y, rect_w, rect_h, text_x, text_y,
+    def side_from_dropdown(self):
+        name = self._widget.btSelect.currentText()
+        side = ["Right", "Left"]
+        return side.index(name)
+
+    def draw_taxel(self, painter, rect_x, rect_y, rect_w, rect_h, text_x, text_y,
                        colour, text):
 
         rect = QRectF(rect_x, rect_y, rect_w, rect_h)
@@ -158,15 +134,21 @@ class Pr2GripperSensorGui(Plugin):
 
         painter.setFont(QFont("Arial", self.label_font_size[0]))
 
-        for n in range(len(self.sensing_electrodes_x)):
-            value = self.latest_data.left_finger_pad_forces[n]
+        for n in range(len(self.taxels_x)):
+            if self.side_from_dropdown() == 0:
+              value = self.latest_data.right_finger_pad_forces[n]
+            elif self.side_from_dropdown() == 1:
+              value = self.latest_data.left_finger_pad_forces[n]
+            else:
+              rospy.logerr("Wrong side selected")
+              return
             eval("self._widget.lcdE%02d.display(%d)" % (n + 1, value))
-            colour = self.get_electrode_colour_from_value(value)
+            colour = self.get_taxel_colour_from_value(value)
 
-            rect_x = self.sensing_electrodes_x[n]
-            rect_y = self.sensing_electrodes_y[n]
-            rect_w = self.sensing_electrodes_w[n]
-            rect_h = self.sensing_electrodes_h[n]
+            rect_x = self.taxels_x[n]
+            rect_y = self.taxels_y[n]
+            rect_w = self.taxel_width[n]
+            rect_h = self.taxel_height[n]
 
             if n < 9:
                 text_x = rect_x + self.x_display_offset[1]
@@ -176,7 +158,7 @@ class Pr2GripperSensorGui(Plugin):
                 text_x = rect_x + self.x_display_offset[2]
                 text_y = rect_y + self.y_display_offset[2]
 
-            self.draw_electrode(painter, rect_x, rect_y, rect_w, rect_h, text_x, text_y,
+            self.draw_taxel(painter, rect_x, rect_y, rect_w, rect_h, text_x, text_y,
                                 colour, str(n + 1))
 
         painter.setFont(QFont("Arial", self.label_font_size[1]))
@@ -188,22 +170,12 @@ class Pr2GripperSensorGui(Plugin):
             rospy.Subscriber(prefix, PR2GripperSensorRawData, self.tactile_cb)
 
     def load_params(self):
-        self.RECTANGLE_WIDTH = rospy.get_param(
-            "sr_gui_biotac/electrode_display_width",
-            90)  # Display sizes for electrodes in pixels
-        self.RECTANGLE_HEIGHT = rospy.get_param(
-            "sr_gui_biotac/electrode_display_height", 90)
-
         # location on the sensor in mm to display location in pixels
-        self.x_display_offset = rospy.get_param(
-            "sr_gui_biotac/x_display_offset", [100, 12.5, 4.5,
-                                               3.5])  # Pixel offsets for
-        # displaying electrodes. offset[0] is applied to each electrode.
-        # 1,2 and 3 are the label offsets for displaying electrode number.
-        self.y_display_offset = rospy.get_param(
-            "sr_gui_biotac/y_display_offset", [200, 4.0, 4.0, 4.0])
-        self.label_font_size = rospy.get_param(
-            "sr_gui_biotac/electrode_label_font_sizes", [24, 22])  # Font sizes
+        self.x_display_offset = [100, 12.5, 4.5, 3.5]  # Pixel offsets for
+        # displaying taxels. offset[0] is applied to each taxel.
+        # 1,2 and 3 are the label offsets for displaying taxel number.
+        self.y_display_offset = [200, 4.0, 4.0, 4.0]
+        self.label_font_size = [24, 22]  # Font sizes
         self.default_topic = "/l_gripper_sensor_controller/raw_data"
 
     def __init__(self, context):
@@ -217,9 +189,8 @@ class Pr2GripperSensorGui(Plugin):
 
         self.latest_data = PR2GripperSensorRawData()
 
-        self.define_electrodes()
-        self._nb_electrodes = self._nb_electrodes_biotac
-        self.assign_electrodes(self._nb_electrodes)
+        self.define_taxels()
+        self.assign_taxels()
 
         ui_file = os.path.join(rospkg.RosPack().get_path('pr2_gripper_sensor_gui'),
                                'uis', 'Pr2GripperSensorGui.ui')
